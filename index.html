@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шаблонизатор документов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        .app-container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .app-container h2 {
+            margin-top: 0;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-direction: column;
+        }
+        .editor, .form {
+            width: 100%;
+        }
+        .hidden-document {
+            display: none;
+            border: 1px solid black;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #f9f9f9;
+        }
+        .visible-document {
+            display: block;
+        }
+        @media print {
+            .container, .form {
+                display: none;
+            }
+            .hidden-document {
+                display: block;
+            }
+        }
+        .element {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        .element button {
+            margin-left: 10px;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .element button:hover {
+            background-color: #c9302c;
+        }
+        button {
+            margin-top: 10px;
+            background-color: #5bc0de;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #31b0d5;
+        }
+        .add-element {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        select {
+            padding: 8px;
+            border-radius: 4px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        textarea {
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="container">
+            <div class="editor">
+                <h2>Редактор шаблона</h2>
+                <div class="add-element">
+                    <select id="element-type">
+                        <option value="h1">Заголовок первого уровня</option>
+                        <option value="h2">Заголовок второго уровня</option>
+                        <option value="text">Текст</option>
+                        <option value="img">Изображение</option>
+                    </select>
+                    <button onclick="addElement()">Добавить элемент</button>
+                </div>
+                <div id="template-elements"></div>
+            </div>
+
+            <div class="form">
+                <h2>Форма заполнения документа</h2>
+                <div id="fill-form"></div>
+                <button onclick="toggleDocument()">Показать/Скрыть документ</button>
+                <button onclick="window.print()">Вывести на печать</button>
+            </div>
+        </div>
+
+        <div id="document" class="hidden-document"></div>
+    </div>
+
+    <script>
+        let elements = [];
+        
+        function addElement() {
+            const type = document.getElementById('element-type').value;
+            elements.push({ type, content: '' });
+            renderTemplate();
+            renderForm();
+        }
+
+        function removeElement(index) {
+            elements.splice(index, 1);
+            renderTemplate();
+            renderForm();
+        }
+
+        function renderTemplate() {
+            const templateContainer = document.getElementById('template-elements');
+            templateContainer.innerHTML = '';
+            elements.forEach((element, index) => {
+                const elementDiv = document.createElement('div');
+                elementDiv.className = 'element';
+                elementDiv.innerHTML = `${getElementName(element.type)} <button onclick="removeElement(${index})">Удалить</button>`;
+                templateContainer.appendChild(elementDiv);
+            });
+        }
+
+        function renderForm() {
+            const formContainer = document.getElementById('fill-form');
+            formContainer.innerHTML = '';
+            elements.forEach((element, index) => {
+                const formElement = document.createElement('div');
+                formElement.className = 'element';
+                formElement.innerHTML = `
+                    ${getElementName(element.type)}: 
+                    ${getInputField(element.type, index)}
+                `;
+                formContainer.appendChild(formElement);
+            });
+        }
+
+        function getElementName(type) {
+            switch (type) {
+                case 'h1': return 'Заголовок первого уровня';
+                case 'h2': return 'Заголовок второго уровня';
+                case 'text': return 'Текст';
+                case 'img': return 'Изображение';
+            }
+        }
+
+        function getInputField(type, index) {
+            switch (type) {
+                case 'h1':
+                case 'h2':
+                    return `<input type="text" oninput="updateContent(${index}, this.value)">`;
+                case 'text':
+                    return `<textarea oninput="updateContent(${index}, this.value)"></textarea>`;
+                case 'img':
+                    return `<input type="text" placeholder="URL изображения" oninput="updateContent(${index}, this.value)">`;
+            }
+        }
+
+        function updateContent(index, content) {
+            elements[index].content = content;
+        }
+
+        function toggleDocument() {
+            const documentContainer = document.getElementById('document');
+            if (documentContainer.classList.contains('visible-document')) {
+                documentContainer.classList.remove('visible-document');
+                documentContainer.classList.add('hidden-document');
+            } else {
+                documentContainer.classList.remove('hidden-document');
+                documentContainer.classList.add('visible-document');
+                renderDocument();
+            }
+        }
+
+        function renderDocument() {
+            const documentContainer = document.getElementById('document');
+            documentContainer.innerHTML = '';
+            elements.forEach(element => {
+                let htmlElement;
+                switch (element.type) {
+                    case 'h1':
+                        htmlElement = `<h1>${element.content}</h1>`;
+                        break;
+                    case 'h2':
+                        htmlElement = `<h2>${element.content}</h2>`;
+                        break;
+                    case 'text':
+                        htmlElement = `<p>${element.content.replace(/\n/g, '<br>')}</p>`;
+                        break;
+                    case 'img':
+                        htmlElement = `<img src="${element.content}" alt="Изображение" style="max-width:100%;">`;
+                        break;
+                }
+                documentContainer.innerHTML += htmlElement;
+            });
+        }
+    </script>
+</body>
+</html>
